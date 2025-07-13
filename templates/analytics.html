@@ -1,0 +1,755 @@
+{% extends "base.html" %}
+
+{% block title %}Análisis - LoanPredict Pro{% endblock %}
+
+{% block head %}
+<style>
+/* Estilos específicos para analytics */
+.confusion-matrix {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.confusion-matrix table {
+    width: 100%;
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.confusion-matrix th,
+.confusion-matrix td {
+    padding: 1.5rem 1rem;
+    text-align: center;
+    border: 2px solid #f1f5f9;
+    font-weight: 600;
+    position: relative;
+}
+
+.confusion-matrix th {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.confusion-matrix .matrix-cell {
+    font-size: 2rem;
+    font-weight: 800;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+.confusion-matrix .matrix-cell small {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-top: 0.25rem;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.confusion-matrix .true-negative {
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+}
+
+.confusion-matrix .false-negative {
+    background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+}
+
+.confusion-matrix .false-positive {
+    background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+}
+
+.confusion-matrix .true-positive {
+    background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.metric-item {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+}
+
+.metric-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.metric-item.accuracy { border-left-color: #3b82f6; }
+.metric-item.precision { border-left-color: #10b981; }
+.metric-item.recall { border-left-color: #0ea5e9; }
+.metric-item.roc-auc { border-left-color: #f59e0b; }
+
+.metric-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0.5rem 0;
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.metric-description {
+    font-size: 0.9rem;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.interpretation-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    height: 100%;
+}
+
+.interpretation-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.interpretation-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.interpretation-item:last-child {
+    margin-bottom: 0;
+}
+
+.interpretation-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.interpretation-content strong {
+    color: #1e40af;
+    font-weight: 700;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e40af;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.section-title i {
+    margin-right: 0.75rem;
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.feature-importance-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.feature-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.feature-name {
+    font-weight: 600;
+    color: #1e40af;
+}
+
+.feature-value {
+    font-weight: 700;
+    color: #059669;
+}
+
+.model-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.info-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border-top: 4px solid #3b82f6;
+}
+
+.info-section h6 {
+    color: #1e40af;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.info-section h6 i {
+    margin-right: 0.5rem;
+    width: 20px;
+    text-align: center;
+}
+
+.info-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.info-section li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f5f9;
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.info-section li:before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: #3b82f6;
+    font-weight: bold;
+}
+
+.info-section li:last-child {
+    border-bottom: none;
+}
+
+.calculation-item {
+    text-align: center;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.calculation-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center mb-5">
+                <h1 class="display-5 fw-bold text-gradient mb-3">
+                    <i class="fas fa-chart-line me-3"></i>
+                    Panel de Análisis Avanzado
+                </h1>
+                <p class="lead text-muted">
+                    Métricas detalladas del modelo y análisis de rendimiento
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Error:</strong> {{ error }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if metrics %}
+    <!-- Métricas del Modelo -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="section-title">
+                <i class="fas fa-tachometer-alt"></i>
+                Métricas de Rendimiento
+            </h2>
+        </div>
+        
+        <div class="col-12">
+            <div class="metrics-grid">
+                <div class="metric-item accuracy">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <i class="fas fa-bullseye fa-2x text-primary"></i>
+                        <span class="badge bg-primary">ACCURACY</span>
+                    </div>
+                    <div class="metric-value">{{ "%.1f"|format(metrics.accuracy * 100) }}%</div>
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-primary" style="width: {{ (metrics.accuracy * 100)|round(1) }}%"></div>
+                    </div>
+                    <div class="metric-description">
+                        Porcentaje de predicciones correctas sobre el total
+                    </div>
+                </div>
+                
+                <div class="metric-item precision">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <i class="fas fa-crosshairs fa-2x text-success"></i>
+                        <span class="badge bg-success">PRECISIÓN</span>
+                    </div>
+                    <div class="metric-value">{{ "%.1f"|format(metrics.precision * 100) }}%</div>
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: {{ (metrics.precision * 100)|round(1) }}%"></div>
+                    </div>
+                    <div class="metric-description">
+                        De los préstamos predichos como aprobados, cuántos fueron correctos
+                    </div>
+                </div>
+                
+                <div class="metric-item recall">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <i class="fas fa-search fa-2x text-info"></i>
+                        <span class="badge bg-info">RECALL</span>
+                    </div>
+                    <div class="metric-value">{{ "%.1f"|format(metrics.recall * 100) }}%</div>
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-info" style="width: {{ (metrics.recall * 100)|round(1) }}%"></div>
+                    </div>
+                    <div class="metric-description">
+                        De todos los préstamos realmente aprobados, cuántos detectó el modelo
+                    </div>
+                </div>
+                
+                <div class="metric-item roc-auc">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <i class="fas fa-chart-area fa-2x text-warning"></i>
+                        <span class="badge bg-warning">ROC AUC</span>
+                    </div>
+                    <div class="metric-value">{{ "%.1f"|format(metrics.roc_auc * 100) }}%</div>
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-warning" style="width: {{ (metrics.roc_auc * 100)|round(1) }}%"></div>
+                    </div>
+                    <div class="metric-description">
+                        Capacidad del modelo para distinguir entre aprobados y rechazados
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Matriz de Confusión -->
+    <div class="row mb-5">
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-th me-2"></i>
+                        Matriz de Confusión
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="confusion-matrix">
+                        <table class="table-borderless">
+                            <thead>
+                                <tr>
+                                    <th style="background: transparent; border: none;"></th>
+                                    <th colspan="2" style="border-radius: 12px 12px 0 0;">
+                                        <i class="fas fa-eye me-2"></i>Valores Reales
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th style="background: transparent; border: none;"></th>
+                                    <th style="border-radius: 0;">Rechazado (0)</th>
+                                    <th style="border-radius: 0;">Aprobado (1)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th rowspan="2" style="writing-mode: vertical-rl; text-orientation: mixed; border-radius: 0;">
+                                        <i class="fas fa-robot me-2"></i>Predicción
+                                    </th>
+                                    <td class="matrix-cell true-negative">
+                                        {{ metrics.confusion_matrix[0][0] }}
+                                        <small>Verdadero Negativo</small>
+                                    </td>
+                                    <td class="matrix-cell false-negative">
+                                        {{ metrics.confusion_matrix[0][1] }}
+                                        <small>Falso Negativo</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="matrix-cell false-positive">
+                                        {{ metrics.confusion_matrix[1][0] }}
+                                        <small>Falso Positivo</small>
+                                    </td>
+                                    <td class="matrix-cell true-positive" style="border-radius: 0 0 12px 0;">
+                                        {{ metrics.confusion_matrix[1][1] }}
+                                        <small>Verdadero Positivo</small>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Interpretación de Métricas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="interpretation-card">
+                        <div class="interpretation-item">
+                            <div class="interpretation-icon" style="background: linear-gradient(135deg, #3b82f6, #1e40af);">
+                                <i class="fas fa-bullseye text-white"></i>
+                            </div>
+                            <div class="interpretation-content">
+                                <strong>Accuracy (Precisión):</strong><br>
+                                <small class="text-muted">
+                                    Mide qué tan frecuentemente el modelo hace predicciones correctas en general.
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="interpretation-item">
+                            <div class="interpretation-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                                <i class="fas fa-crosshairs text-white"></i>
+                            </div>
+                            <div class="interpretation-content">
+                                <strong>Precision (Precisión):</strong><br>
+                                <small class="text-muted">
+                                    De todos los préstamos que el modelo predijo como aprobados, cuántos fueron realmente aprobados.
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="interpretation-item">
+                            <div class="interpretation-icon" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">
+                                <i class="fas fa-search text-white"></i>
+                            </div>
+                            <div class="interpretation-content">
+                                <strong>Recall (Sensibilidad):</strong><br>
+                                <small class="text-muted">
+                                    De todos los préstamos que realmente fueron aprobados, cuántos detectó correctamente el modelo.
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="interpretation-item">
+                            <div class="interpretation-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                <i class="fas fa-chart-area text-white"></i>
+                            </div>
+                            <div class="interpretation-content">
+                                <strong>ROC AUC:</strong><br>
+                                <small class="text-muted">
+                                    Mide la capacidad del modelo para distinguir entre préstamos aprobados y rechazados.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if charts %}
+    <!-- Gráficos de Análisis -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="section-title">
+                <i class="fas fa-chart-bar"></i>
+                Análisis de Datos
+            </h2>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h6 class="fw-bold mb-3">
+                    <i class="fas fa-chart-pie text-primary me-2"></i>
+                    Distribución de Aprobaciones
+                </h6>
+                <div id="approvalChart"></div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h6 class="fw-bold mb-3">
+                    <i class="fas fa-chart-line text-success me-2"></i>
+                    Historial Crediticio vs Aprobación
+                </h6>
+                <div id="creditHistoryChart"></div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h6 class="fw-bold mb-3">
+                    <i class="fas fa-chart-area text-info me-2"></i>
+                    Distribución de Ingresos
+                </h6>
+                <div id="incomeChart"></div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h6 class="fw-bold mb-3">
+                    <i class="fas fa-chart-bar text-warning me-2"></i>
+                    Análisis de Educación
+                </h6>
+                <div id="educationChart"></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Importancia de Características -->
+    {% if feature_importance %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="section-title">
+                <i class="fas fa-key"></i>
+                Importancia de Características
+            </h2>
+        </div>
+        
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="feature-importance-list">
+                        {% for feature, importance in feature_importance.items() %}
+                        <div class="feature-item">
+                            <div class="feature-name">{{ feature.replace('_', ' ').title() }}</div>
+                            <div class="d-flex align-items-center">
+                                <div class="progress me-3" style="width: 150px; height: 8px;">
+                                    <div class="progress-bar bg-primary" style="width: {{ (importance * 100)|round(1) }}%"></div>
+                                </div>
+                                <span class="feature-value">{{ "%.2f"|format(importance) }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Información del Modelo -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="section-title">
+                <i class="fas fa-robot"></i>
+                Información del Modelo
+            </h2>
+        </div>
+        
+        <div class="col-12">
+            <div class="model-info-grid">
+                <div class="info-section">
+                    <h6>
+                        <i class="fas fa-cogs"></i>
+                        Algoritmo y Configuración
+                    </h6>
+                    <p class="text-muted mb-3">Modelo de Machine Learning optimizado para predicción de préstamos</p>
+                    <ul>
+                        <li>Regresión Logística con optimización avanzada</li>
+                        <li>Búsqueda de hiperparámetros con RandomizedSearchCV</li>
+                        <li>Validación cruzada con 5 folds</li>
+                        <li>Optimización por ROC AUC</li>
+                    </ul>
+                </div>
+                
+                <div class="info-section">
+                    <h6>
+                        <i class="fas fa-tools"></i>
+                        Preprocesamiento de Datos
+                    </h6>
+                    <p class="text-muted mb-3">Transformaciones aplicadas a los datos de entrada</p>
+                    <ul>
+                        <li>Normalización Min-Max para variables financieras</li>
+                        <li>Estandarización Z-score para otras variables numéricas</li>
+                        <li>Codificación ordinal para nivel educativo</li>
+                        <li>One-Hot Encoding para variables categóricas</li>
+                        <li>Ingeniería de características derivadas</li>
+                    </ul>
+                </div>
+                
+                <div class="info-section">
+                    <h6>
+                        <i class="fas fa-database"></i>
+                        Características del Dataset
+                    </h6>
+                    <p class="text-muted mb-3">Variables utilizadas para entrenar el modelo</p>
+                    <ul>
+                        <li>Ingreso del solicitante y co-solicitante</li>
+                        <li>Monto y plazo del préstamo solicitado</li>
+                        <li>Historial crediticio del solicitante</li>
+                        <li>Estado civil y nivel educativo</li>
+                        <li>Área geográfica de la propiedad</li>
+                        <li>Ratios financieros calculados automáticamente</li>
+                    </ul>
+                </div>
+                
+                <div class="info-section">
+                    <h6>
+                        <i class="fas fa-shield-alt"></i>
+                        Validación y Confiabilidad
+                    </h6>
+                    <p class="text-muted mb-3">Métodos para asegurar la calidad del modelo</p>
+                    <ul>
+                        <li>Validación cruzada estratificada</li>
+                        <li>Evaluación en conjunto de prueba independiente</li>
+                        <li>Análisis de matriz de confusión detallado</li>
+                        <li>Monitoreo continuo de métricas de rendimiento</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="row">
+        <div class="col-12 text-center">
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a href="{{ url_for('predict') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-calculator me-2"></i>
+                    Nueva Predicción
+                </a>
+                <a href="{{ url_for('batch_predict') }}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-file-csv me-2"></i>
+                    Predicción por Lotes
+                </a>
+                <a href="{{ url_for('retrain_model') }}" class="btn btn-outline-success btn-lg">
+                    <i class="fas fa-sync-alt me-2"></i>
+                    Reentrenar Modelo
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{% if charts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuración común para todos los gráficos
+    const commonLayout = {
+        font: {
+            family: 'Inter, sans-serif',
+            size: 12
+        },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: { t: 40, r: 20, b: 40, l: 40 }
+    };
+    
+    const config = {
+        responsive: true,
+        displayModeBar: false
+    };
+    
+    // Render all charts with improved styling
+    if (typeof Plotly !== 'undefined') {
+        try {
+            var approvalData = {{ charts.approval_distribution | safe }};
+            approvalData.layout = { ...approvalData.layout, ...commonLayout };
+            Plotly.newPlot('approvalChart', approvalData.data, approvalData.layout, config);
+
+            var creditData = {{ charts.credit_history_impact | safe }};
+            creditData.layout = { ...creditData.layout, ...commonLayout };
+            Plotly.newPlot('creditHistoryChart', creditData.data, creditData.layout, config);
+
+            var incomeData = {{ charts.income_distribution | safe }};
+            incomeData.layout = { ...incomeData.layout, ...commonLayout };
+            Plotly.newPlot('incomeChart', incomeData.data, incomeData.layout, config);
+
+            if ({{ charts.education_impact | safe }}) {
+                var educationData = {{ charts.education_impact | safe }};
+                educationData.layout = { ...educationData.layout, ...commonLayout };
+                Plotly.newPlot('educationChart', educationData.data, educationData.layout, config);
+            }
+        } catch (error) {
+            console.error('Error rendering charts:', error);
+        }
+    }
+    
+    // Add fade-in animation to cards
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+    
+    // Observe all cards for animation
+    document.querySelectorAll('.card, .metric-item, .chart-container').forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(card);
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Predicción por Lotes - LoanPredict Pro{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="text-center mb-4">
+            <i class="fas fa-file-csv me-2"></i>
+            Predicción por Lotes
+        </h1>
+        <p class="text-center text-muted mb-5">
+            Sube un archivo CSV para procesar múltiples solicitudes de préstamo
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <!-- Upload Form -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-upload me-2"></i>
+                    Subir Archivo CSV
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">
+                            <i class="fas fa-file me-1"></i>
+                            Seleccionar archivo CSV
+                        </label>
+                        <input type="file" class="form-control" id="file" name="file" 
+                               accept=".csv" required>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Solo se permiten archivos CSV (máximo 16MB)
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-magic me-2"></i>
+                            Procesar Archivo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-question-circle me-2"></i>
+                    Instrucciones
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Formato requerido:</strong> El archivo CSV debe contener las siguientes columnas:
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Columna</th>
+                                <th>Descripción</th>
+                                <th>Tipo</th>
+                                <th>Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>ApplicantIncome</code></td>
+                                <td>Ingreso del solicitante</td>
+                                <td>Numérico</td>
+                                <td>5000.0</td>
+                            </tr>
+                            <tr>
+                                <td><code>CoapplicantIncome</code></td>
+                                <td>Ingreso del co-solicitante</td>
+                                <td>Numérico</td>
+                                <td>2000.0</td>
+                            </tr>
+                            <tr>
+                                <td><code>LoanAmount</code></td>
+                                <td>Monto del préstamo</td>
+                                <td>Numérico</td>
+                                <td>150000.0</td>
+                            </tr>
+                            <tr>
+                                <td><code>Loan_Amount_Term</code></td>
+                                <td>Plazo del préstamo (meses)</td>
+                                <td>Numérico</td>
+                                <td>360</td>
+                            </tr>
+                            <tr>
+                                <td><code>Credit_History</code></td>
+                                <td>Historial crediticio (1=Sí, 0=No)</td>
+                                <td>Numérico</td>
+                                <td>1</td>
+                            </tr>
+                            <tr>
+                                <td><code>Married</code></td>
+                                <td>Estado civil</td>
+                                <td>Texto</td>
+                                <td>Yes / No</td>
+                            </tr>
+                            <tr>
+                                <td><code>Education</code></td>
+                                <td>Nivel de educación</td>
+                                <td>Texto</td>
+                                <td>Graduate / Not Graduate</td>
+                            </tr>
+                            <tr>
+                                <td><code>Property_Area</code></td>
+                                <td>Área de propiedad</td>
+                                <td>Texto</td>
+                                <td>Urban / Semiurban / Rural</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Opcional:</strong> Puedes incluir una columna <code>Loan_ID</code> para identificar cada registro
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Importante:</strong> Los valores faltantes serán procesados automáticamente
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sample Data Section -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-download me-2"></i>
+                    Ejemplo de Formato CSV
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Ejemplo de cómo debe estructurarse tu archivo CSV:</p>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Loan_ID</th>
+                                <th>ApplicantIncome</th>
+                                <th>CoapplicantIncome</th>
+                                <th>LoanAmount</th>
+                                <th>Loan_Amount_Term</th>
+                                <th>Credit_History</th>
+                                <th>Married</th>
+                                <th>Education</th>
+                                <th>Property_Area</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>LP001001</td>
+                                <td>5849</td>
+                                <td>0</td>
+                                <td>128</td>
+                                <td>360</td>
+                                <td>1</td>
+                                <td>Yes</td>
+                                <td>Graduate</td>
+                                <td>Urban</td>
+                            </tr>
+                            <tr>
+                                <td>LP001002</td>
+                                <td>4583</td>
+                                <td>1508</td>
+                                <td>128</td>
+                                <td>360</td>
+                                <td>1</td>
+                                <td>No</td>
+                                <td>Graduate</td>
+                                <td>Rural</td>
+                            </tr>
+                            <tr>
+                                <td>LP001003</td>
+                                <td>3000</td>
+                                <td>0</td>
+                                <td>66</td>
+                                <td>360</td>
+                                <td>1</td>
+                                <td>Yes</td>
+                                <td>Not Graduate</td>
+                                <td>Semiurban</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-outline-primary" onclick="downloadSampleCSV()">
+                        <i class="fas fa-download me-2"></i>
+                        Descargar Ejemplo CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function downloadSampleCSV() {
+    const csvContent = `Loan_ID,ApplicantIncome,CoapplicantIncome,LoanAmount,Loan_Amount_Term,Credit_History,Married,Education,Property_Area
+LP001001,5849,0,128,360,1,Yes,Graduate,Urban
+LP001002,4583,1508,128,360,1,No,Graduate,Rural
+LP001003,3000,0,66,360,1,Yes,Not Graduate,Semiurban
+LP001004,2583,2358,120,360,1,Yes,Graduate,Urban
+LP001005,6000,0,141,360,1,Yes,Not Graduate,Urban`;
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample_loan_data.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

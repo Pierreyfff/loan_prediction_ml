@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Resultados por Lotes - LoanPredict Pro{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="text-center mb-4">
+            <i class="fas fa-chart-bar me-2"></i>
+            Resultados de Predicción por Lotes
+        </h1>
+        <p class="text-center text-muted mb-5">
+            Análisis completo de las predicciones procesadas
+        </p>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-database fa-3x text-primary mb-3"></i>
+                <h3 class="card-title">{{ total }}</h3>
+                <p class="card-text text-muted">Total Procesados</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <h3 class="card-title">{{ approved }}</h3>
+                <p class="card-text text-muted">Préstamos Aprobados</p>
+                <small class="text-success">({{ "%.1f"|format((approved/total)*100) }}%)</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-times-circle fa-3x text-danger mb-3"></i>
+                <h3 class="card-title">{{ rejected }}</h3>
+                <p class="card-text text-muted">Préstamos Rechazados</p>
+                <small class="text-danger">({{ "%.1f"|format((rejected/total)*100) }}%)</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Distribución de Resultados
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="resultsChart"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="row mb-4">
+    <div class="col-12 text-center">
+        <a href="{{ url_for('download_results') }}" class="btn btn-success btn-lg me-3">
+            <i class="fas fa-download me-2"></i>
+            Descargar Resultados
+        </a>
+        <a href="{{ url_for('batch_predict') }}" class="btn btn-outline-primary btn-lg">
+            <i class="fas fa-upload me-2"></i>
+            Nuevo Archivo
+        </a>
+    </div>
+</div>
+
+<!-- Results Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-table me-2"></i>
+                    Detalle de Predicciones
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="resultsTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Loan ID</th>
+                                <th>Predicción</th>
+                                <th>Estado</th>
+                                <th>Prob. Aprobación</th>
+                                <th>Prob. Rechazo</th>
+                                <th>Confianza</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in results %}
+                            <tr>
+                                <td>{{ result.Loan_ID }}</td>
+                                <td>
+                                    {% if result.Predicted_Loan_Status == 1 %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>1
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times me-1"></i>0
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if result.Predicted_Loan_Status == 1 %}
+                                        <span class="text-success fw-bold">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            Aprobado
+                                        </span>
+                                    {% else %}
+                                        <span class="text-danger fw-bold">
+                                            <i class="fas fa-times-circle me-1"></i>
+                                            Rechazado
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ (result.Probability_Approved * 100)|round(1) }}%">
+                                            {{ "%.1f"|format(result.Probability_Approved * 100) }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-danger" role="progressbar" 
+                                             style="width: {{ (result.Probability_Rejected * 100)|round(1) }}%">
+                                            {{ "%.1f"|format(result.Probability_Rejected * 100) }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% set confidence = [result.Probability_Approved, result.Probability_Rejected] | max %}
+                                    <span class="badge 
+                                        {% if confidence > 0.8 %}bg-success
+                                        {% elif confidence > 0.6 %}bg-warning
+                                        {% else %}bg-danger{% endif %}">
+                                        {{ "%.1f"|format(confidence * 100) }}%
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Render chart
+    if (typeof Plotly !== 'undefined') {
+        var chartData = {{ chart | safe }};
+        Plotly.newPlot('resultsChart', chartData.data, chartData.layout);
+    }
+
+    // Initialize DataTable if available
+    if (typeof $ !== 'undefined' && $.fn.DataTable) {
+        $('#resultsTable').DataTable({
+            "pageLength": 25,
+            "order": [[ 0, "asc" ]],
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

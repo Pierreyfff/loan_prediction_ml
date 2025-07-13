@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio - LoanPredict Pro{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="hero-section text-center py-5 mb-5">
+            <h1 class="display-4 fw-bold text-primary">
+                <i class="fas fa-brain me-3"></i>
+                LoanPredict Pro
+            </h1>
+            <p class="lead text-muted">
+                Sistema inteligente de predicción de préstamos con Machine Learning avanzado
+            </p>
+            <div class="mt-4">
+                <a href="{{ url_for('predict') }}" class="btn btn-primary btn-lg me-3">
+                    <i class="fas fa-calculator me-2"></i>
+                    Predecir Préstamo
+                </a>
+                <a href="{{ url_for('analytics') }}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Ver Análisis
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+{% if stats %}
+<div class="row mb-5">
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-database fa-3x text-primary mb-3"></i>
+                <h3 class="card-title">{{ "{:,}".format(stats.total_records) }}</h3>
+                <p class="card-text text-muted">Registros Entrenamiento</p>
+                {% if stats.test_records > 0 %}
+                <small class="text-info">+ {{ stats.test_records }} prueba</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <h3 class="card-title">{{ "{:,}".format(stats.approved_loans) }}</h3>
+                <p class="card-text text-muted">Préstamos Aprobados</p>
+                <div class="progress mt-2">
+                    <div class="progress-bar bg-success" style="width: {{ stats.approval_rate }}%"></div>
+                </div>
+                <small class="text-success">{{ "%.1f"|format(stats.approval_rate) }}% tasa de aprobación</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-times-circle fa-3x text-danger mb-3"></i>
+                <h3 class="card-title">{{ "{:,}".format(stats.rejected_loans) }}</h3>
+                <p class="card-text text-muted">Préstamos Rechazados</p>
+                <div class="progress mt-2">
+                    <div class="progress-bar bg-danger" style="width: {{ 100 - stats.approval_rate }}%"></div>
+                </div>
+                <small class="text-danger">{{ "%.1f"|format(100 - stats.approval_rate) }}% tasa de rechazo</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-balance-scale fa-3x text-info mb-3"></i>
+                <h3 class="card-title">{{ "%.3f"|format(stats.data_quality.balance_ratio) }}</h3>
+                <p class="card-text text-muted">Balance de Datos</p>
+                <small class="text-info">Calidad del dataset</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Metrics -->
+{% if stats.prediction_stats %}
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">
+            <i class="fas fa-trophy me-2"></i>
+            Rendimiento del Modelo
+        </h2>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card metric-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-bullseye fa-3x text-warning mb-3"></i>
+                <h3 class="card-title">{{ "%.1f"|format(stats.prediction_stats.prediction_accuracy) }}%</h3>
+                <p class="card-text text-muted">Precisión del Modelo</p>
+                <small class="text-warning">En datos de prueba</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card metric-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-thumbs-up fa-3x text-success mb-3"></i>
+                <h3 class="card-title">{{ "%.1f"|format(stats.prediction_stats.avg_confidence_approved) }}%</h3>
+                <p class="card-text text-muted">Confianza Promedio</p>
+                <small class="text-success">Aprobaciones</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card metric-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-thumbs-down fa-3x text-danger mb-3"></i>
+                <h3 class="card-title">{{ "%.1f"|format(stats.prediction_stats.avg_confidence_rejected) }}%</h3>
+                <p class="card-text text-muted">Confianza Promedio</p>
+                <small class="text-danger">Rechazos</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Feature Importance -->
+{% if stats.feature_importance %}
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">
+            <i class="fas fa-key me-2"></i>
+            Factores Clave de Decisión
+        </h2>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-history fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Historial Crediticio</h5>
+                <div class="progress mb-2">
+                    <div class="progress-bar bg-primary" style="width: {{ (stats.feature_importance.credit_history_impact * 100) | round(1) }}%"></div>
+                </div>
+                <p class="card-text">{{ "%.1f"|format(stats.feature_importance.credit_history_impact * 100) }}% de importancia</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-graduation-cap fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Nivel Educativo</h5>
+                <div class="progress mb-2">
+                    <div class="progress-bar bg-success" style="width: {{ (stats.feature_importance.education_impact * 100) | round(1) }}%"></div>
+                </div>
+                <p class="card-text">{{ "%.1f"|format(stats.feature_importance.education_impact * 100) }}% de importancia</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-ring fa-3x text-info mb-3"></i>
+                <h5 class="card-title">Estado Civil</h5>
+                <div class="progress mb-2">
+                    <div class="progress-bar bg-info" style="width: {{ (stats.feature_importance.married_impact * 100) | round(1) }}%"></div>
+                </div>
+                <p class="card-text">{{ "%.1f"|format(stats.feature_importance.married_impact * 100) }}% de importancia</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- Insights Section -->
+{% if insights %}
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">
+            <i class="fas fa-lightbulb me-2"></i>
+            Insights del Modelo
+        </h2>
+    </div>
+    
+    <div class="col-md-6 mb-3">
+        <div class="card insight-card">
+            <div class="card-body">
+                <h6 class="card-title text-primary">
+                    <i class="fas fa-star me-2"></i>
+                    Predicciones de Alta Confianza
+                </h6>
+                <p class="card-text">
+                    <span class="h4 text-success">{{ insights.high_confidence_approved }}</span>
+                    préstamos fueron aprobados con alta confianza (>80%)
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-3">
+        <div class="card insight-card">
+            <div class="card-body">
+                <h6 class="card-title text-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Casos Ambiguos
+                </h6>
+                <p class="card-text">
+                    <span class="h4 text-warning">{{ insights.low_confidence_predictions }}</span>
+                    casos requieren revisión manual (confianza 40-60%)
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Features Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">
+            <i class="fas fa-star me-2"></i>
+            Características del Sistema
+        </h2>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-robot fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Inteligencia Artificial</h5>
+                <p class="card-text">Modelo de ML entrenado con datos reales para máxima precisión en predicciones.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-file-upload fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Procesamiento Masivo</h5>
+                <p class="card-text">Procesa cientos de solicitudes simultáneamente con análisis detallado.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-shield-alt fa-3x text-info mb-3"></i>
+                <h5 class="card-title">Análisis de Riesgo</h5>
+                <p class="card-text">Evaluación completa de riesgo con factores de decisión explicables.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How it Works Section -->
+<div class="row">
+    <div class="col-12">
+        <h2 class="text-center mb-4">
+            <i class="fas fa-cogs me-2"></i>
+            ¿Cómo Funciona Nuestro Modelo?
+        </h2>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="process-step text-center">
+            <div class="step-number">1</div>
+            <i class="fas fa-edit fa-2x text-primary mb-2"></i>
+            <h6>Ingreso de Datos</h6>
+            <p class="text-muted">El sistema recibe información financiera y personal del solicitante</p>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="process-step text-center">
+            <div class="step-number">2</div>
+            <i class="fas fa-brain fa-2x text-success mb-2"></i>
+            <h6>Procesamiento IA</h6>
+            <p class="text-muted">Algoritmos avanzados analizan patrones y correlaciones complejas</p>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="process-step text-center">
+            <div class="step-number">3</div>
+            <i class="fas fa-calculator fa-2x text-info mb-2"></i>
+            <h6>Evaluación de Riesgo</h6>
+            <p class="text-muted">Se calcula probabilidad de aprobación y nivel de riesgo asociado</p>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="process-step text-center">
+            <div class="step-number">4</div>
+            <i class="fas fa-chart-line fa-2x text-warning mb-2"></i>
+            <h6>Resultado Inteligente</h6>
+            <p class="text-muted">Decisión fundamentada con explicación de factores clave</p>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+{% if stats %}
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <i class="fas fa-chart-line fa-2x text-primary mb-2"></i>
+                        <h6>Modelo Entrenado</h6>
+                        <small class="text-muted">{{ stats.total_records }} registros históricos</small>
+                    </div>
+                    <div class="col-md-3">
+                        <i class="fas fa-accuracy fa-2x text-success mb-2"></i>
+                        <h6>Alta Precisión</h6>
+                        <small class="text-muted">
+                            {% if stats.prediction_stats %}
+                                {{ "%.1f"|format(stats.prediction_stats.prediction_accuracy) }}% exactitud
+                            {% else %}
+                                Optimizado para precisión
+                            {% endif %}
+                        </small>
+                    </div>
+                    <div class="col-md-3">
+                        <i class="fas fa-clock fa-2x text-info mb-2"></i>
+                        <h6>Respuesta Instantánea</h6>
+                        <small class="text-muted">Resultados en menos de 1 segundo</small>
+                    </div>
+                    <div class="col-md-3">
+                        <i class="fas fa-users fa-2x text-warning mb-2"></i>
+                        <h6>Fácil de Usar</h6>
+                        <small class="text-muted">Interfaz intuitiva y amigable</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

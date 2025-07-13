@@ -1,0 +1,492 @@
+{% extends "base.html" %}
+
+{% block title %}Predicción Individual - LoanPredict Pro{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="text-center mb-4">
+            <i class="fas fa-calculator me-2"></i>
+            Predicción Individual de Préstamo
+        </h1>
+        <p class="text-center text-muted mb-5">
+            Completa el formulario para obtener una predicción detallada con análisis de riesgo
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Form Section -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-form me-2"></i>
+                    Información del Solicitante
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="loanForm" class="needs-validation" novalidate>
+                    <!-- Información Financiera -->
+                    <div class="mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-dollar-sign me-2"></i>
+                            Información Financiera
+                        </h6>
+                        <hr>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="applicant_income" class="form-label">
+                                    <i class="fas fa-wallet me-1"></i>
+                                    Ingreso del Solicitante *
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="applicant_income" 
+                                           name="applicant_income" required min="1" step="1"
+                                           value="{{ form_data.ApplicantIncome if form_data else '' }}"
+                                           placeholder="Ej: 5000">
+                                    <div class="invalid-feedback">
+                                        Ingrese un monto válido mayor a 0
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">Ingreso mensual bruto en USD</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="coapplicant_income" class="form-label">
+                                    <i class="fas fa-hand-holding-usd me-1"></i>
+                                    Ingreso Co-solicitante
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="coapplicant_income" 
+                                           name="coapplicant_income" required min="0" step="1"
+                                           value="{{ form_data.CoapplicantIncome if form_data else '0' }}"
+                                           placeholder="Ej: 2000">
+                                    <div class="invalid-feedback">
+                                        Ingrese un monto válido (0 si no aplica)
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">Ingrese 0 si no hay co-solicitante</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="loan_amount" class="form-label">
+                                    <i class="fas fa-money-bill-wave me-1"></i>
+                                    Monto del Préstamo *
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="loan_amount" 
+                                           name="loan_amount" required min="1" step="1"
+                                           value="{{ form_data.LoanAmount if form_data else '' }}"
+                                           placeholder="Ej: 150000">
+                                    <div class="invalid-feedback">
+                                        Ingrese un monto válido mayor a 0
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">Monto total solicitado en USD</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="loan_term" class="form-label">
+                                    <i class="fas fa-calendar-alt me-1"></i>
+                                    Plazo Préstamo (meses)
+                                </label>
+                                <select class="form-select" id="loan_term" name="loan_term" required>
+                                    <option value="">Seleccionar plazo...</option>
+                                    <option value="120" {{ 'selected' if form_data and form_data.Loan_Amount_Term == 120 else '' }}>10 años (120 meses)</option>
+                                    <option value="180" {{ 'selected' if form_data and form_data.Loan_Amount_Term == 180 else '' }}>15 años (180 meses)</option>
+                                    <option value="240" {{ 'selected' if form_data and form_data.Loan_Amount_Term == 240 else '' }}>20 años (240 meses)</option>
+                                    <option value="300" {{ 'selected' if form_data and form_data.Loan_Amount_Term == 300 else '' }}>25 años (300 meses)</option>
+                                    <option value="360" {{ 'selected' if form_data and form_data.Loan_Amount_Term == 360 else '' }}>30 años (360 meses)</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Seleccione un plazo válido
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Cálculos automáticos -->
+                        <div id="debt-ratio-info" class="alert alert-info" style="display: none;">
+                            <i class="fas fa-calculator me-2"></i>
+                            <strong>Análisis automático:</strong>
+                            <div id="calculations"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Información Personal -->
+                    <div class="mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-user me-2"></i>
+                            Información Personal
+                        </h6>
+                        <hr>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="married" class="form-label">
+                                    <i class="fas fa-ring me-1"></i>
+                                    Estado Civil *
+                                </label>
+                                <select class="form-select" id="married" name="married" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="Yes" {{ 'selected' if form_data and form_data.Married == 'Yes' else '' }}>Casado/a</option>
+                                    <option value="No" {{ 'selected' if form_data and form_data.Married == 'No' else '' }}>Soltero/a</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Seleccione su estado civil
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="education" class="form-label">
+                                    <i class="fas fa-graduation-cap me-1"></i>
+                                    Nivel de Educación *
+                                </label>
+                                <select class="form-select" id="education" name="education" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="Graduate" {{ 'selected' if form_data and form_data.Education == 'Graduate' else '' }}>Universitario/Graduado</option>
+                                    <option value="Not Graduate" {{ 'selected' if form_data and form_data.Education == 'Not Graduate' else '' }}>Secundario/No Graduado</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Seleccione su nivel educativo
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="property_area" class="form-label">
+                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                    Área de Propiedad *
+                                </label>
+                                <select class="form-select" id="property_area" name="property_area" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="Urban" {{ 'selected' if form_data and form_data.Property_Area == 'Urban' else '' }}>Urbana (Ciudad)</option>
+                                    <option value="Semiurban" {{ 'selected' if form_data and form_data.Property_Area == 'Semiurban' else '' }}>Semi-urbana (Suburbio)</option>
+                                    <option value="Rural" {{ 'selected' if form_data and form_data.Property_Area == 'Rural' else '' }}>Rural (Campo)</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Seleccione el área de la propiedad
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="credit_history" class="form-label">
+                                    <i class="fas fa-history me-1"></i>
+                                    Historial Crediticio *
+                                </label>
+                                <select class="form-select" id="credit_history" name="credit_history" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="1" {{ 'selected' if form_data and form_data.Credit_History == 1 else '' }}>
+                                        <i class="fas fa-check"></i> Sí, tengo buen historial crediticio
+                                    </option>
+                                    <option value="0" {{ 'selected' if form_data and form_data.Credit_History == 0 else '' }}>
+                                        <i class="fas fa-times"></i> No tengo historial crediticio
+                                    </option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Seleccione su situación crediticia
+                                </div>
+                                <small class="form-text text-muted">Incluye tarjetas de crédito, préstamos anteriores, etc.</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg" id="predictBtn">
+                            <i class="fas fa-magic me-2"></i>
+                            <span class="btn-text">Analizar Préstamo</span>
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary">
+                            <i class="fas fa-redo me-2"></i>
+                            Limpiar Formulario
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Result Section -->
+    <div class="col-lg-6">
+        {% if prediction %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Resultado del Análisis
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Status Badge -->
+                <div class="text-center mb-4">
+                    {% if prediction.prediction == 1 %}
+                        <div class="result-badge approved">
+                            <i class="fas fa-check-circle fa-4x mb-3"></i>
+                            <h2 class="mb-2">PRÉSTAMO APROBADO</h2>
+                            <p class="mb-0">El análisis indica alta probabilidad de aprobación</p>
+                            {% if prediction.risk_level %}
+                            <span class="badge bg-{{ prediction.risk_level.color }} mt-2 fs-6">
+                                Riesgo {{ prediction.risk_level.level }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="result-badge rejected">
+                            <i class="fas fa-times-circle fa-4x mb-3"></i>
+                            <h2 class="mb-2">PRÉSTAMO RECHAZADO</h2>
+                            <p class="mb-0">El análisis indica baja probabilidad de aprobación</p>
+                            {% if prediction.risk_level %}
+                            <span class="badge bg-{{ prediction.risk_level.color }} mt-2 fs-6">
+                                Riesgo {{ prediction.risk_level.level }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Detailed Analysis -->
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h6 class="text-success">Probabilidad de Aprobación</h6>
+                            <div class="progress mb-2" style="height: 30px;">
+                                <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" 
+                                     style="width: {{ (prediction.probability_approved * 100)|round(1) }}%">
+                                    <strong>{{ "%.1f"|format(prediction.probability_approved * 100) }}%</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h6 class="text-danger">Probabilidad de Rechazo</h6>
+                            <div class="progress mb-2" style="height: 30px;">
+                                <div class="progress-bar bg-danger progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" 
+                                     style="width: {{ (prediction.probability_rejected * 100)|round(1) }}%">
+                                    <strong>{{ "%.1f"|format(prediction.probability_rejected * 100) }}%</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Confidence Level -->
+                <div class="mb-4">
+                    <h6 class="text-muted mb-3">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Nivel de Confianza del Modelo
+                    </h6>
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="progress" style="height: 25px;">
+                                <div class="progress-bar 
+                                    {% if prediction.confidence > 0.8 %}bg-success
+                                    {% elif prediction.confidence > 0.6 %}bg-warning
+                                    {% else %}bg-danger{% endif %} 
+                                    progress-bar-striped" 
+                                    role="progressbar" 
+                                    style="width: {{ (prediction.confidence * 100)|round(1) }}%">
+                                    <strong>{{ "%.1f"|format(prediction.confidence * 100) }}%</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        {% if prediction.confidence > 0.8 %}
+                            <i class="fas fa-check-circle text-success"></i> Confianza muy alta
+                        {% elif prediction.confidence > 0.6 %}
+                            <i class="fas fa-exclamation-triangle text-warning"></i> Confianza moderada
+                        {% else %}
+                            <i class="fas fa-times-circle text-danger"></i> Requiere revisión manual
+                        {% endif %}
+                    </small>
+                </div>
+                
+                <!-- Decision Factors -->
+                {% if prediction.decision_factors %}
+                <div class="mb-4">
+                    <h6 class="text-muted mb-3">
+                        <i class="fas fa-list-alt me-2"></i>
+                        Factores de Decisión
+                    </h6>
+                    {% for factor in prediction.decision_factors %}
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-
+                            {% if factor.impact == 'Positivo' %}check-circle text-success
+                            {% elif factor.impact == 'Negativo' %}times-circle text-danger
+                            {% else %}minus-circle text-warning{% endif %} me-2"></i>
+                        <div class="flex-grow-1">
+                            <strong>{{ factor.factor }}:</strong>
+                            <span class="text-
+                                {% if factor.impact == 'Positivo' %}success
+                                {% elif factor.impact == 'Negativo' %}danger
+                                {% else %}warning{% endif %}">{{ factor.impact }}</span>
+                            <br><small class="text-muted">{{ factor.description }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Additional Information -->
+                {% if additional_info %}
+                <div class="mb-4">
+                    <h6 class="text-muted mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Información Adicional
+                    </h6>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <small class="text-muted">Ingreso Total Familiar</small>
+                            <div class="fw-bold">${{ "{:,.0f}".format(additional_info.total_household_income) }}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Ratio Deuda/Ingreso</small>
+                            <div class="fw-bold 
+                                {% if additional_info.debt_to_income_ratio > 5 %}text-danger
+                                {% elif additional_info.debt_to_income_ratio > 3 %}text-warning
+                                {% else %}text-success{% endif %}">
+                                {{ "%.2f"|format(additional_info.debt_to_income_ratio) }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('predict') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-redo me-2"></i>
+                        Nueva Predicción
+                    </a>
+                    <a href="{{ url_for('batch_predict') }}" class="btn btn-outline-success">
+                        <i class="fas fa-file-csv me-2"></i>
+                        Predicción por Lotes
+                    </a>
+                    <a href="{{ url_for('analytics') }}" class="btn btn-outline-info">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Ver Análisis Completo
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-calculator fa-5x text-muted mb-4"></i>
+                <h4 class="text-muted mb-3">Completa el formulario</h4>
+                <p class="text-muted mb-4">Los resultados del análisis aparecerán aquí con:</p>
+                <div class="row">
+                    <div class="col-6">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <small>Probabilidad de aprobación</small>
+                    </div>
+                    <div class="col-6">
+                        <i class="fas fa-shield-alt text-info me-2"></i>
+                        <small>Análisis de riesgo</small>
+                    </div>
+                    <div class="col-6 mt-2">
+                        <i class="fas fa-list-alt text-warning me-2"></i>
+                        <small>Factores de decisión</small>
+                    </div>
+                    <div class="col-6 mt-2">
+                        <i class="fas fa-chart-line text-primary me-2"></i>
+                        <small>Nivel de confianza</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('loanForm');
+    const applicantIncomeInput = document.getElementById('applicant_income');
+    const loanAmountInput = document.getElementById('loan_amount');
+    const loanTermInput = document.getElementById('loan_term');
+    const debtRatioInfo = document.getElementById('debt-ratio-info');
+    const calculationsDiv = document.getElementById('calculations');
+    const predictBtn = document.getElementById('predictBtn');
+    
+    // Real-time calculations
+    function updateCalculations() {
+        const applicantIncome = parseFloat(applicantIncomeInput.value) || 0;
+        const loanAmount = parseFloat(loanAmountInput.value) || 0;
+        const loanTerm = parseFloat(loanTermInput.value) || 360;
+        
+        if (applicantIncome > 0 && loanAmount > 0) {
+            const debtRatio = (loanAmount / applicantIncome).toFixed(2);
+            const monthlyPayment = (loanAmount / loanTerm).toFixed(2);
+            const paymentRatio = ((monthlyPayment / applicantIncome) * 100).toFixed(1);
+            
+            let ratioClass = 'text-success';
+            let ratioText = 'Excelente';
+            
+            if (debtRatio > 5) {
+                ratioClass = 'text-danger';
+                ratioText = 'Alto riesgo';
+            } else if (debtRatio > 3) {
+                ratioClass = 'text-warning';
+                ratioText = 'Moderado';
+            }
+            
+            calculationsDiv.innerHTML = `
+                <div class="row">
+                    <div class="col-md-4">
+                        <small>Ratio Deuda/Ingreso</small><br>
+                        <span class="${ratioClass} fw-bold">${debtRatio} (${ratioText})</span>
+                    </div>
+                    <div class="col-md-4">
+                        <small>Pago Mensual Est.</small><br>
+                        <span class="fw-bold">$${monthlyPayment}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <small>% del Ingreso</small><br>
+                        <span class="fw-bold">${paymentRatio}%</span>
+                    </div>
+                </div>
+            `;
+            
+            debtRatioInfo.style.display = 'block';
+        } else {
+            debtRatioInfo.style.display = 'none';
+        }
+    }
+    
+    // Add event listeners
+    [applicantIncomeInput, loanAmountInput, loanTermInput].forEach(input => {
+        input.addEventListener('input', updateCalculations);
+    });
+    
+    // Form submission with loading state
+    form.addEventListener('submit', function(e) {
+        if (form.checkValidity()) {
+            predictBtn.disabled = true;
+            predictBtn.innerHTML = `
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                Analizando...
+            `;
+        }
+    });
+    
+    // Initialize calculations if form has data
+    updateCalculations();
+});
+</script>
+{% endblock %}
