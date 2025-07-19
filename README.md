@@ -33,7 +33,7 @@ Sistema inteligente de predicción de préstamos usando Machine Learning.
 
 ## Uso
 
-1. Accede a http://localhost:5000
+1. Accede a http://localhost:5000 o https://loan-prediction-ml-yhyb.onrender.com/
 2. Completa el formulario de predicción individual
 3. O sube un archivo CSV para predicción por lotes
 4. Revisa las métricas en el panel de análisis
